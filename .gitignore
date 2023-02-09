@@ -1,0 +1,7 @@
+# ディレクトリ
+cclvenv/
+__pycache__/
+migrations/
+
+# ファイル
+temp.txt
