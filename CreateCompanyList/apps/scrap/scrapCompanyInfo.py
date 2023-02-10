@@ -124,7 +124,7 @@ class GetCompanyInfoType(GetCompanyInfoMixin):
                 output_company_list.append(
                         self._create_company_name_list(url_=next_url))
                 # 次のページURL取得
-                next_url = self._get_next_page_url(url_=self.SEARCH_PAGE_URL)
+                next_url = self._get_next_page_url(url_=next_url)
             else:
                 # 次のページがない場合
                 break
