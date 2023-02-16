@@ -75,7 +75,7 @@ class GetCompanyInfoType(GetCompanyInfoMixin):
         return c_name
 
 
-    def _create_company_name_list(self, url_):
+    def _create_company_name_list(self, url_, output_list):
         # 会社一覧ページをパース
         soup = self.parseHtml(url_=url_)
         company_name_list = []
@@ -86,7 +86,7 @@ class GetCompanyInfoType(GetCompanyInfoMixin):
                 conpany_name_text = company_name.text
                 # 会社名以外の文字列を削除
                 conpany_name_text = self._remove_other_company_name(conpany_name_text)
-                if conpany_name_text not in company_name_list:
+                if conpany_name_text not in output_list:
                     # 重複なし
                     company_name_list.append(conpany_name_text)
         return company_name_list
@@ -115,19 +115,21 @@ class GetCompanyInfoType(GetCompanyInfoMixin):
         """
         output_company_list = []
         # 検索ページトップ画面の一覧から会社名を取得
-        c_name_list = self._create_company_name_list(url_=self.SEARCH_PAGE_URL)
+        c_name_list = self._create_company_name_list(
+                    url_=self.SEARCH_PAGE_URL, output_list=output_company_list)
         output_company_list.append(c_name_list)
         # 次のページURL取得
         next_url = self._get_next_page_url(url_=self.SEARCH_PAGE_URL)
-        while True:
-            if next_url:
-                output_company_list.append(
-                        self._create_company_name_list(url_=next_url))
-                # 次のページURL取得
-                next_url = self._get_next_page_url(url_=next_url)
-            else:
-                # 次のページがない場合
+        while next_url:
+            output_company_list.append(
+                    self._create_company_name_list(
+                            url_=next_url, output_list=output_company_list))
+            # 次のページURL取得
+            next_url = self._get_next_page_url(url_=next_url)
+            if not next_url:
+                # 次のページがない場合、ループ終了
                 break
+
         if output_flg:
             # 外部ファイルへの書き出し
             self.output_data(filename_="./temp.txt",
@@ -138,4 +140,3 @@ class GetCompanyInfoType(GetCompanyInfoMixin):
 if __name__ == "__main__":
     get_company_info_type = GetCompanyInfoType(keyword="IT", interval=2)
     _ = get_company_info_type.execute(output_flg=True)
-    print(_)
