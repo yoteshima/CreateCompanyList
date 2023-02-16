@@ -3,6 +3,7 @@
 import re
 import time
 
+import cchardet
 import requests
 from bs4 import BeautifulSoup as bs
 
@@ -11,11 +12,16 @@ class GetCompanyInfoMixin:
     """
     各求人媒体より企業情報を取得する基底クラス
     """
+
+    # サイト内文字コード
+    CHAR_CODE = 'SHIFT_JIS'
+
     def __init__(self, base_url, interval, *args, **kwargs):
         # 媒体のベースURL
         self.BASE_URL = base_url
         # ページ取得の間隔(秒)
         self.INTERVAL_TIME = interval
+
 
     def parseHtml(self, url_):
         """
@@ -26,13 +32,13 @@ class GetCompanyInfoMixin:
         # 対象ページのHTMLの取得
         response = requests.get(url=url_)
         # 文字化け対策
-        response.encoding = response.apparent_encoding
+        self.CHAR_CODE = cchardet.detect(response.content)["encoding"]
         # htmlのパース
-        return bs(response.text, "html.parser")
+        return bs(response.content, "lxml", from_encoding=self.CHAR_CODE)
     
 
     def output_data(self, filename_, data_list):
-        with open(filename_, mode="a", encoding="UTF-8") as fw:
+        with open(filename_, mode="a", encoding=self.CHAR_CODE) as fw:
             fw.write("\n".join(data_list))
         
 
@@ -86,7 +92,8 @@ class GetCompanyInfoType(GetCompanyInfoMixin):
                 conpany_name_text = company_name.text
                 # 会社名以外の文字列を削除
                 conpany_name_text = self._remove_other_company_name(conpany_name_text)
-                if conpany_name_text not in output_list:
+                if conpany_name_text not in company_name_list \
+                                and conpany_name_text not in output_list:
                     # 重複なし
                     company_name_list.append(conpany_name_text)
         return company_name_list
@@ -117,13 +124,13 @@ class GetCompanyInfoType(GetCompanyInfoMixin):
         # 検索ページトップ画面の一覧から会社名を取得
         c_name_list = self._create_company_name_list(
                     url_=self.SEARCH_PAGE_URL, output_list=output_company_list)
-        output_company_list.append(c_name_list)
+        output_company_list.extend(c_name_list)
         # 次のページURL取得
         next_url = self._get_next_page_url(url_=self.SEARCH_PAGE_URL)
         while next_url:
-            output_company_list.append(
+            output_company_list.extend(
                     self._create_company_name_list(
-                            url_=next_url, output_list=output_company_list))
+                            url_=next_url, output_list=output_company_list).copy())
             # 次のページURL取得
             next_url = self._get_next_page_url(url_=next_url)
             if not next_url:
