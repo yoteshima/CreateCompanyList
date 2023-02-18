@@ -2,6 +2,7 @@
 cclvenv/
 __pycache__/
 migrations/
+driver/
 
 # ファイル
-temp.txt
+temp*
