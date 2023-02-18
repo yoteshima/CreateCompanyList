@@ -62,7 +62,7 @@ class GetCompanyInfoMixin:
         return driver
 
 
-    def parseHtml(self, url_):
+    def parse_html(self, url_):
         """
         htmlのパース
         """
@@ -175,7 +175,7 @@ class GetCompanyInfoType(GetCompanyInfoMixin):
 
     def _create_company_name_list(self, url_, output_list):
         # 会社一覧ページをパース
-        soup = self.parseHtml(url_=url_)
+        soup = self.parse_html(url_=url_)
         company_name_list = []
         for elem in soup.find_all("p", class_="company"):
             company_name = elem.find("span")
@@ -195,7 +195,7 @@ class GetCompanyInfoType(GetCompanyInfoMixin):
         """
         次のページ用のURLを取得
         """
-        soup = self.parseHtml(url_=url_)
+        soup = self.parse_html(url_=url_)
         p_next = soup.find("p", class_="next").find("a")
         nextpage = ""
         if p_next:
