@@ -128,7 +128,11 @@ class GetCompanyInfoMixin:
     def output_data_(self, filename_, data):
         with open(filename_, mode="a", encoding=self.CHAR_CODE) as fw:
             for d in data:
-                fw.write("{}, {}\n".format(d["name"], d["url"]))
+                try:
+                    fw.write("{}, {}\n".format(d["name"], d["url"]))
+                except:
+                    fw.write("会社名エンコード失敗, {}\n".format(d["url"]))
+                    continue
 
 
 class GetCompanyInfoType(GetCompanyInfoMixin):
