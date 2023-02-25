@@ -169,9 +169,10 @@ class GetCompanyInfoType(GetCompanyInfoMixin):
         会社名のみを取得
         """
         # 会社名をスペースで分離
-        company_name_list = company_name.split()
+        # company_name_list = company_name.split()
         # 会社名を取得
-        c_name = company_name_list.pop(0)
+        # c_name = company_name_list.pop(0)
+        c_name = company_name
         # （）などの余計な文字列を削除
         result = re.match(self.PTN, c_name)
         if result:
