@@ -267,7 +267,7 @@ class GetCompanyInfoGreen(GetCompanyInfoMixin):
 
     def __init__(self, interval=5, purge_domein_list=[], *args, **kwargs):
         super().__init__(
-                base_url="https://www.green-japan.com/",
+                base_url="https://www.green-japan.com",
                 interval=interval, 
                 purge_domein_list=purge_domein_list,
                 *args,
@@ -296,7 +296,6 @@ class GetCompanyInfoGreen(GetCompanyInfoMixin):
                                 and conpany_name_text not in output_list:
                     # 重複なし
                     company_name_list.append(conpany_name_text)
-                    print(conpany_name_text)
         return company_name_list
 
 
@@ -329,7 +328,6 @@ class GetCompanyInfoGreen(GetCompanyInfoMixin):
         # 次のページURL取得
         next_url = self._get_next_page_url(url_=self.SEARCH_PAGE_URL)
         while next_url:
-            print(next_url)
             output_company_list.extend(
                     self._create_company_name_list(
                             url_=next_url, output_list=output_company_list).copy())
