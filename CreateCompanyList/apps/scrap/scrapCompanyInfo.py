@@ -349,7 +349,7 @@ class GetCompanyInfoGreen(GetCompanyInfoMixin):
 if __name__ == "__main__":
     purge_domein_list = ['wantedly.com']
     get_company_info_green = GetCompanyInfoGreen(keyword="IT", interval=2, purge_domein_list=purge_domein_list)
-    # get_company_info_green.execute(output_flg=True)
-    company_list = ["デジタル庁","株式会社 SceneLive","アクシスコンサルティング 株式会社","ディップ 株式会社","株式会社 リジョブ","株式会社 テラスカイ・テクノロジーズ","デジタル総合印刷 株式会社","株式会社 アルディート","サブライムコンサルティング 株式会社","日本ITビジネス研究所 株式会社"]
+    company_list = get_company_info_green.execute(output_flg=True)
+    # company_list = ["デジタル庁","株式会社 SceneLive","アクシスコンサルティング 株式会社","ディップ 株式会社","株式会社 リジョブ","株式会社 テラスカイ・テクノロジーズ","デジタル総合印刷 株式会社","株式会社 アルディート","サブライムコンサルティング 株式会社","日本ITビジネス研究所 株式会社"]
     data = get_company_info_green.create_company_info(conmpany_name_list=company_list, output_flg=True)
     print(data)
