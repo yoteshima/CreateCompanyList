@@ -3,6 +3,6 @@
 from django.apps import AppConfig
 
 
-class ScrapConfig(AppConfig):
+class AccountConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'apps.scrap'
+    name = 'apps.account'
