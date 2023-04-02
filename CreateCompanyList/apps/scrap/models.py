@@ -8,14 +8,10 @@ from django.utils.translation import gettext_lazy as _
 
 from apps.account.models import User
 from apps.company.models import Company
+from apps.scrap import utils
 
-
-def set_default_company():
-    """
-    外部キーのデフォルト値を設定
-    """
-    default_company = Company.objects.get_or_create(name=_('default company'))
-    return default_company
+# 会社リストのステータス選択肢
+COMPANY_LIST_STATUS = utils.COMPANY_LIST_STATUS
 
 
 class modelBase(models.Model):
@@ -50,8 +46,11 @@ class CompanyList(modelBase):
                 primary_key=True, default=uuid.uuid4, editable=False)
     company = models.ForeignKey(verbose_name=_('company'),
                 to=Company, on_delete=models.CASCADE)
-    user = models.ForeignKey(verbose_name=_('user'),
+    user = models.ForeignKey(verbose_name=_('charge'),
                 to=User, on_delete=models.DO_NOTHING)
+    status = models.CharField(verbose_name=_('statua'),
+                choices=COMPANY_LIST_STATUS, max_length=1, 
+                        default=COMPANY_LIST_STATUS[0][0])
 
 
     def __str__(self):
