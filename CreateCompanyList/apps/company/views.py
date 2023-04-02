@@ -9,7 +9,7 @@ from apps.company.serializers import CompanySerializer
 from apps.company.models import Company
 
 
-class CompanyViewSet(generics.RetrieveUpdateAPIView):
+class CompanyViewSet(generics.ListCreateAPIView):
     """
     会社情報を取得するビュークラス
     """
@@ -18,13 +18,7 @@ class CompanyViewSet(generics.RetrieveUpdateAPIView):
     lookup_field = 'uuid'
 
 
-    def get(self, request, format=None):
-        companys = Company.objects.all()
-        conpany_info = [{
-                'uuid': company.uuid,
-                'name': company.name,
-                'url': company.url
-        } for company in companys if company ]
-        
-        return Response({'result': conpany_info})
- 
+    def list(self, request):
+        queryset = self.get_queryset()
+        serializer = CompanySerializer(queryset, many=True)
+        return Response(serializer.data)
