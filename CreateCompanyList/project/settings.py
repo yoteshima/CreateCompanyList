@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -128,3 +129,40 @@ AUTH_USER_MODEL = 'account.User'
 
 # 多言語対応
 LOCALE_PATHS = (BASE_DIR / 'locale', )
+
+
+############################################################
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'production': {
+            'format': '%(asctime)s [%(levelname)s] %(process)d %(thread)d '
+                    '%(pathname)s:%(lineno)d %(message)s'
+        },
+    },
+    'handlers': {
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': '/var/log/django/create_company_list.log',
+            'formatter': 'production',
+            'level': 'INFO',
+        },
+    },
+    'loggers': {
+        '': {
+            'handlers': ['file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django': {
+            'handlers': ['file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
+
+if os.name == 'nt':
+    LOGGING['handlers']['file']['filename'] =\
+        'C:\Users\xrnsj\work\CreateCompanyList\log\create_company_list.log'
