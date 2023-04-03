@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
 from django.contrib import admin
-from apps.company.models import Company
+from apps.scrap.models import CompanyList
 
-admin.site.register(Company)
+admin.site.register(CompanyList)

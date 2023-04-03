@@ -16,6 +16,7 @@ class Command(BaseCommand):
     help = ''
 
     def handle(self, *args, **options):
+        logger.info('処理を開始します。')
         # 会社リスト
         company_list = []
         # 除外ドメインリスト
@@ -26,6 +27,7 @@ class Command(BaseCommand):
             get_company_info_type = scrapCompanyInfo.GetCompanyInfoType(
                                     keyword="IT", purge_domein_list=purge_domein_list)
             company_list.extend(get_company_info_type.execute())
+            self.seve_company_data(company_list=company_list, instance_=get_company_info_type)
         except:
             logger.error('@typeより情報を取得するのに失敗しました。')
         
@@ -34,19 +36,25 @@ class Command(BaseCommand):
             get_company_info_green = scrapCompanyInfo.GetCompanyInfoGreen(
                                     keyword="IT", purge_domein_list=purge_domein_list)
             company_list.extend(get_company_info_green.execute())
+            self.seve_company_data(company_list=company_list, instance_=get_company_info_green)
         except:
             logger.error('Greenより情報を取得するのに失敗しました。')
-        
+        logger.info('処理を終了します。')
+
+
+    def seve_company_data(self, company_list, instance_):
         # 会社情報を保存
-        for clist in company_list:
-            name = clist[0]
-            url = clist[1]
-            if not Company.objects.filter(name=name).exists():
+        for cname in company_list:
+            if not Company.objects.filter(name=cname).exists():
+                # 会社のURLを取得
+                company_info = instance_.get_company_url(conmapny_name=cname)
+
                 # 会社名に被りがないものだけ登録
-                company = Company.objects.create(name=name, url=url)
+                company = Company.objects.create(
+                                name=company_info['name'], url=company_info['url'])
                 # 会社リストを作成
                 CompanyList.objects.create(company=company, status=NO_CONTACT)
             else:
-                logger.info('会社名: {}はすでに登録済みです。スキップします。'.format(name))
+                logger.info('会社名: {}はすでに登録済みです。スキップします。'.format(cname))
                 continue
 

@@ -165,4 +165,4 @@ LOGGING = {
 
 if os.name == 'nt':
     LOGGING['handlers']['file']['filename'] =\
-        'C:\Users\xrnsj\work\CreateCompanyList\log\create_company_list.log'
+        'C:\\Users\\xrnsj\\work\\CreateCompanyList\\log\\create_company_list.log'

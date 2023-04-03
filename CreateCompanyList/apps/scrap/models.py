@@ -47,7 +47,7 @@ class CompanyList(modelBase):
     company = models.ForeignKey(verbose_name=_('company'),
                 to=Company, on_delete=models.CASCADE)
     user = models.ForeignKey(verbose_name=_('charge'),
-                to=User, on_delete=models.DO_NOTHING)
+                to=User, on_delete=models.DO_NOTHING, null=True, blank=True)
     status = models.CharField(verbose_name=_('statua'),
                 choices=COMPANY_LIST_STATUS, max_length=1, 
                         default=COMPANY_LIST_STATUS[0][0])
