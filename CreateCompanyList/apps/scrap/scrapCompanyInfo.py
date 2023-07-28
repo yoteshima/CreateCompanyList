@@ -139,9 +139,9 @@ class GetCompanyInfoMixin:
             fw.write("\n".join(data_list))
         
 
-    def output_data_csv(self, filename_, data):
+    def output_data_csv(self, filename_, data, delimiter='\t'):
         with open(filename_, mode="w", encoding=self.CHAR_CODE, newline="") as fw:
-            write_csv = csv.writer(fw)
+            write_csv = csv.writer(fw, delimiter=delimiter)
             for d in data:
                 try:
                     write_csv.writerow([d["name"], d["url"]])

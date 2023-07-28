@@ -3,6 +3,9 @@ cclvenv/
 __pycache__/
 migrations/
 driver/
+log/
 
 # ファイル
 temp*
+.csv
+.tsv
