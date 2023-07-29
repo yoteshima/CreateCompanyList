@@ -38,7 +38,8 @@ class Company(modelBase):
                 primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(verbose_name=_('company name'), 
                 max_length=100, default=_('default company name'))
-    url = models.URLField(verbose_name=_('company url'), null=True, blank=True)
+    url = models.URLField(verbose_name=_('company url'),
+                max_length=2083, null=True, blank=True)
 
 
     def __str__(self):

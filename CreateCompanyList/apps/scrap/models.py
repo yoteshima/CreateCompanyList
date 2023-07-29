@@ -54,4 +54,5 @@ class CompanyList(modelBase):
 
 
     def __str__(self):
-        return self.comapny.name
+        return '{} {}'.format(
+                self.company.name, self.company.url)

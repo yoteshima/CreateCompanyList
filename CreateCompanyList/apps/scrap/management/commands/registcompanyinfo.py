@@ -6,6 +6,7 @@ from apps.company.models import Company
 from apps.scrap import scrapCompanyInfo
 from apps.scrap.models import CompanyList
 
+import traceback
 import logging
 logger = logging.getLogger(__name__)
 
@@ -28,8 +29,9 @@ class Command(BaseCommand):
                                     keyword="IT", purge_domein_list=purge_domein_list)
             company_list.extend(get_company_info_type.execute())
             self.seve_company_data(company_list=company_list, instance_=get_company_info_type)
-        except:
-            logger.error('@typeより情報を取得するのに失敗しました。')
+        except Exception as err_type:
+            logger.error('Greenより情報を取得するのに失敗しました。', err_type)
+            logger.error(traceback.format_stack())
         
         try:
             # Greenから企業情報を取得
@@ -37,8 +39,9 @@ class Command(BaseCommand):
                                     keyword="IT", purge_domein_list=purge_domein_list)
             company_list.extend(get_company_info_green.execute())
             self.seve_company_data(company_list=company_list, instance_=get_company_info_green)
-        except:
-            logger.error('Greenより情報を取得するのに失敗しました。')
+        except Exception as err_green:
+            logger.error('Greenより情報を取得するのに失敗しました。', err_green)
+            logger.error(traceback.format_stack())
         logger.info('処理を終了します。')
 
 
