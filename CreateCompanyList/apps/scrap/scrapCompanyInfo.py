@@ -41,14 +41,12 @@ class GetCompanyInfoMixin:
         # ブラウザ非動作オプション
         options = webdriver.ChromeOptions()
         options.add_argument("--headless")
-        """
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("start-maximized")
         options.add_argument("disable-infobars")
         options.add_argument("--disable-extensions")
         options.add_argument("--disable-gpu")
-        options.add_argument(--no-sandbox")
-        """
+        options.add_argument("--no-sandbox")
         # ドライバ名
         driver_name = "chromedriver"
         if os.name == "nt":
@@ -344,10 +342,103 @@ class GetCompanyInfoGreen(GetCompanyInfoMixin):
         return output_company_list
 
 
+class GetCompanyInfoDoocyJob(GetCompanyInfoMixin):
+    """
+    ドーシージョブから企業情報を取得するクラス
+    """
+    # 【】や()の文字列を検出するパターン
+    PTN = "(.+)(【|（)(.+)(】|）)"
+
+    def __init__(self, interval=5, purge_domein_list=[], *args, **kwargs):
+        super().__init__(
+                base_url="https://doocy.jp",
+                interval=interval, 
+                purge_domein_list=purge_domein_list,
+                *args,
+                **kwargs
+        )
+        # 検索キーワード
+        keyword = kwargs.get("keyword")
+        if keyword:
+            # 検索用URLを作成
+            self.SEARCH_PAGE_URL = "{url}/jobs?&keyword={keyword}"\
+                        .format(url=self.BASE_URL, keyword=keyword)
+        else:
+            # キーワードなしエラー
+            pass
+
+
+    def _create_company_name_list(self, url_, output_list):
+        # 会社一覧ページをパース
+        soup = self.parse_html(url_=url_)
+        company_name_list = []
+        for company_name in soup.find_all("p", class_="text-gray-56"):
+            if company_name:
+                # 会社名がnullではない
+                conpany_name_text = company_name.text
+                if conpany_name_text not in company_name_list \
+                                and conpany_name_text not in output_list:
+                    # 重複なし
+                    company_name_list.append(conpany_name_text)
+        return company_name_list
+
+
+    def _get_next_page_url(self, url_):
+        """
+        次のページ用のURLを取得
+        """
+        soup = self.parse_html(url_=url_)
+        # ページャURL全件取得
+        p_links = soup.find_all("a", class_="page-link")
+        nextpage = ""
+        for link in p_links:
+            if link.get("rel"):
+                if "next" in link.get("rel"):
+                    # 次ページのURLを取得
+                    nextpage = link.get("href")
+                    break
+
+        if nextpage:
+            # 基となるURLと次ページのURLを合わせる
+            nextpage = "{base_url}{next}"\
+                .format(base_url=self.BASE_URL, next=nextpage)
+        return nextpage
+
+
+    def execute(self, output_flg=False):
+        """
+        会社名リスト作成を実行
+        """
+        output_company_list = []
+        # 検索ページトップ画面の一覧から会社名を取得
+        c_name_list = self._create_company_name_list(
+                    url_=self.SEARCH_PAGE_URL, output_list=output_company_list)
+        output_company_list.extend(c_name_list)
+        # 次のページURL取得
+        next_url = self._get_next_page_url(url_=self.SEARCH_PAGE_URL)
+        while next_url:
+            output_company_list.extend(
+                    self._create_company_name_list(
+                            url_=next_url, output_list=output_company_list).copy())
+            # 次のページURL取得
+            next_url = self._get_next_page_url(url_=next_url)
+            if not next_url:
+                # 次のページがない場合、ループ終了
+                break
+
+        if output_flg:
+            # 外部ファイルへの書き出し
+            self.output_data(filename_="./temp.txt",
+                    data_list=output_company_list)
+        return output_company_list
+
+
 if __name__ == "__main__":
     purge_domein_list = ['wantedly.com']
-    get_company_info_green = GetCompanyInfoGreen(keyword="IT", interval=2, purge_domein_list=purge_domein_list)
-    # get_company_info_green.execute(output_flg=True)
-    company_list = ["デジタル庁","株式会社 SceneLive","アクシスコンサルティング 株式会社","ディップ 株式会社","株式会社 リジョブ","株式会社 テラスカイ・テクノロジーズ","デジタル総合印刷 株式会社","株式会社 アルディート","サブライムコンサルティング 株式会社","日本ITビジネス研究所 株式会社"]
-    data = get_company_info_green.create_company_info(conmpany_name_list=company_list, output_flg=True)
-    print(data)
+    get_company_info = GetCompanyInfoDoocyJob(keyword="IT", interval=2, purge_domein_list=purge_domein_list)
+    get_company_info.execute()
+    # get_company_info = GetCompanyInfoType(interval=2, purge_domein_list=purge_domein_list)
+    # get_company_info.execute()
+    # company_list = ["デジタル庁","株式会社 SceneLive","アクシスコンサルティング 株式会社","ディップ 株式会社","株式会社 リジョブ","株式会社 テラスカイ・テクノロジーズ","デジタル総合印刷 株式会社","株式会社 アルディート","サブライムコンサルティング 株式会社","日本ITビジネス研究所 株式会社"]
+    # data = get_company_info_green.create_company_info(conmpany_name_list=company_list, output_flg=True)
+    # print(data)
