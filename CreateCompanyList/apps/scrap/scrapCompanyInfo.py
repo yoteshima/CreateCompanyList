@@ -61,6 +61,15 @@ class GetCompanyInfoMixin:
         return driver
 
 
+    def init_selenium_ff_get_page(self, url_):
+        options = webdriver.FirefoxOptions()
+        options.add_argument('--headless')
+        driver = webdriver.Firefox(options=options)
+        # 検索
+        driver.get(url_)
+        return driver
+
+
     def parse_html(self, url_):
         """
         htmlのパース
@@ -111,7 +120,8 @@ class GetCompanyInfoMixin:
         url_ = "{base_url}{name}%E3%80%80会社概要".format(
                         base_url=self.SERCH_ENGIN_URL, name=conmapny_name)
         # 検索結果一覧を取得
-        driver = self.init_selenium_get_page(url_=url_)
+        # driver = self.init_selenium_get_page(url_=url_)
+        driver = self.init_selenium_ff_get_page(url_=url_)
         company_url = ""
         # URLのリスト取得
         for i, elemh3 in  enumerate(driver.find_elements(By.XPATH, "//a/h3")):
@@ -129,6 +139,8 @@ class GetCompanyInfoMixin:
                     break
             else:
                 continue
+        # ブラウザを閉じる
+        driver.close()
         return {"name": conmapny_name, "url": company_url}
 
         
@@ -433,12 +445,143 @@ class GetCompanyInfoDoocyJob(GetCompanyInfoMixin):
         return output_company_list
 
 
+class GetCompanyInfoRikunabi(GetCompanyInfoMixin):
+    """
+    リクナビから企業情報を取得するクラス
+    """
+    # 【】や()の文字列を検出するパターン
+    KAKKO_PTN = r"(.+)(【|（|「)(.*(会社|株|有).*)(】|）|」)"
+    # 不要な文字列から会社の名称のみを抽出するためのパターン
+    COMPANY_NAME_PTN = r"([^\s★◆]*(会社|株|有)[^\s★◆]*)"
+    # キーワードフィルタ
+    KEYWOED = ["IT", "DX", "デジタル", "社内SE", "テクニカル", "アプリ", "システム開発", "ソフトウェア開発"]
+
+    def __init__(self, interval=5, purge_domein_list=[], *args, **kwargs):
+        super().__init__(
+                base_url="https://next.rikunabi.com",
+                interval=interval, 
+                purge_domein_list=purge_domein_list,
+                *args,
+                **kwargs
+        )
+        # 検索キーワード
+        self.keyword = kwargs.get("keyword", "")
+        # 検索用URLを作成
+        self.SEARCH_PAGE_URL = "{url}/rnc/docs/cp_s00890.jsp?leadtc=n_ichiran_panel_submit_btn"\
+                    .format(url=self.BASE_URL)
+
+
+    def _cleansing_company_name(self, company_element):
+        company_name = company_element.text
+        matched = re.match(self.COMPANY_NAME_PTN, company_name)
+        if matched:
+            return matched.group(1)
+        matched = re.match(self.KAKKO_PTN, company_name)
+        if matched:
+            return matched.group(3)
+        return company_name
+
+
+    def _get_pure_company_name(self, company_element):
+        try:
+            company_link_element = company_element.find_element(By.TAG_NAME, "a")
+            c_link = company_link_element.get_attribute('href')
+            soup = self.parse_html(url_=c_link)
+            breadcrumb = soup.find("ul", class_="rnn-breadcrumb")
+            return breadcrumb.text.splitlines()[-1]
+        except:
+            return company_element.text
+
+
+    def _is_filtered_keyword(self, discripts):
+        for discript in discripts:
+            for key in self.KEYWOED:
+                if key in discript.text:
+                    return True
+        return False
+
+
+    def get_next_page_url(self, driver):
+        try:
+            next_page_element = driver.find_element(By.CLASS_NAME, "rnn-pagination__next")
+            next_page_link_element = next_page_element.find_element(By.TAG_NAME, "a")
+            return next_page_link_element.get_attribute('href')
+        except Exception as e:
+            print("最終ページです。")
+            print(e)
+
+
+    def _create_company_name_list(self, driver):
+        # 会社情報一覧を取得
+        company_element_list = driver.find_elements(By.CLASS_NAME, "rnn-jobOfferList__item")
+        company_name_list = []
+        for company_element in company_element_list:
+            # 会社名欄
+            c_name_element = company_element.find_element(By.CLASS_NAME, "rnn-jobOfferList__item__company__text")
+            # 仕事の概要欄
+            c_disc_elements = company_element.find_elements(By.CLASS_NAME, "rnn-offerDetail__text")
+            if self._is_filtered_keyword(discripts=c_disc_elements):
+                c_name = self._get_pure_company_name(company_element=c_name_element)
+                print(f"company name: {c_name}")
+                company_name_list.append(c_name)
+        return driver, company_name_list
+
+
+    def execute(self, output_flg=False):
+        """
+        会社名リスト作成を実行
+        """
+        output_company_list = []
+        try:
+            url = temp_url = ""
+            while True:
+                # URL
+                url = self.SEARCH_PAGE_URL if not url else temp_url
+                print(f"accsess url: {url}")
+                # 会社一覧ページをパース
+                driver = self.init_selenium_ff_get_page(url_=url)
+                driver, company_list = self._create_company_name_list(driver=driver)
+                # 会社名のリスト
+                output_company_list.extend(company_list.copy())
+                #次のページURLを取得
+                temp_url = self.get_next_page_url(driver=driver)
+                print(f"next page url: {temp_url}")
+                # 毎回ブラウザを閉じる
+                driver.close()
+        except Exception as e:
+            print(e)
+
+        if output_flg:
+            # 外部ファイルへの書き出し
+            self.output_data(filename_="rikunabi_next_temp.txt",
+                    data_list=output_company_list)
+        return output_company_list
+
+
 if __name__ == "__main__":
+    import sys
+    medium_type = sys.argv[1]
+
+    # with open("temp.txt", "r", encoding="SHIFT_JIS") as f:
+    #     company_list = []
+    #     company_list.extend(f.read().splitlines())
     purge_domein_list = ['wantedly.com']
-    get_company_info = GetCompanyInfoDoocyJob(keyword="IT", interval=2, purge_domein_list=purge_domein_list)
-    get_company_info.execute()
-    # get_company_info = GetCompanyInfoType(interval=2, purge_domein_list=purge_domein_list)
-    # get_company_info.execute()
-    # company_list = ["デジタル庁","株式会社 SceneLive","アクシスコンサルティング 株式会社","ディップ 株式会社","株式会社 リジョブ","株式会社 テラスカイ・テクノロジーズ","デジタル総合印刷 株式会社","株式会社 アルディート","サブライムコンサルティング 株式会社","日本ITビジネス研究所 株式会社"]
-    # data = get_company_info_green.create_company_info(conmpany_name_list=company_list, output_flg=True)
-    # print(data)
+
+    company_list = []
+    get_company_info = None
+    if medium_type == 'type':
+        get_company_info = GetCompanyInfoType(keyword="IT", interval=2, purge_domein_list=purge_domein_list)
+        company_list = get_company_info.execute(output_flg=True)
+    elif medium_type == 'green':
+        get_company_info = GetCompanyInfoGreen(keyword="IT", interval=2, purge_domein_list=purge_domein_list)
+        company_list = get_company_info.execute(output_flg=True)
+    elif medium_type == 'doocy':
+        get_company_info = GetCompanyInfoDoocyJob(keyword="IT", interval=2, purge_domein_list=purge_domein_list)
+        company_list = get_company_info.execute(output_flg=True)
+    elif medium_type == 'rikunabi':
+        get_company_info = GetCompanyInfoRikunabi(keyword="IT", interval=2, purge_domein_list=purge_domein_list)
+        company_list = get_company_info.execute(output_flg=True)
+    else:
+        raise(Exception)
+
+    get_company_info.create_company_info(conmpany_name_list=company_list, output_flg=True)

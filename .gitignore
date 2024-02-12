@@ -7,6 +7,6 @@ log/
 
 # ファイル
 temp*
-.csv
-.tsv
-.log
+*.csv
+*.tsv
+*.log
