@@ -65,6 +65,7 @@ class GetCompanyInfoMixin:
         options = webdriver.FirefoxOptions()
         options.add_argument('--headless')
         driver = webdriver.Firefox(options=options)
+        driver.set_window_size(1920, 2160)
         # 検索
         driver.get(url_)
         return driver
@@ -146,7 +147,11 @@ class GetCompanyInfoMixin:
         
     def output_data(self, filename_, data_list):
         with open(filename_, mode="a", encoding=self.CHAR_CODE) as fw:
-            fw.write("\n".join(data_list))
+            for data in data_list:
+                try:
+                    fw.write(f"{data}\n")
+                except UnicodeEncodeError:
+                    fw.write("会社名エンコード失敗\n")
         
 
     def output_data_csv(self, filename_, data, delimiter='\t'):
@@ -511,7 +516,18 @@ class GetCompanyInfoRikunabi(GetCompanyInfoMixin):
             print(e)
 
 
-    def _create_company_name_list(self, driver):
+    def _search_keyword(self, driver):
+        # ページのキーワード検索する
+        input_keyword_element = driver.find_element(By.CLASS_NAME, "rn3-conditionKeywordInput__input")
+        input_keyword_element.send_keys(self.keyword)
+        # 検索ボタンを押下
+        search_button_element = driver.find_element(By.CLASS_NAME, "rn3-sideConditionalSearch__buttonSearch")
+        search_button_element.click()
+
+        return driver
+
+
+    def _create_company_name_list(self, driver, output_list=[]):
         # 会社情報一覧を取得
         company_element_list = driver.find_elements(By.CLASS_NAME, "rnn-jobOfferList__item")
         company_name_list = []
@@ -522,8 +538,10 @@ class GetCompanyInfoRikunabi(GetCompanyInfoMixin):
             c_disc_elements = company_element.find_elements(By.CLASS_NAME, "rnn-offerDetail__text")
             if self._is_filtered_keyword(discripts=c_disc_elements):
                 c_name = self._get_pure_company_name(company_element=c_name_element)
-                print(f"company name: {c_name}")
-                company_name_list.append(c_name)
+                if c_name not in company_name_list \
+                                    and c_name not in output_list:
+                    print(f"company name: {c_name}")
+                    company_name_list.append(c_name)
         return driver, company_name_list
 
 
@@ -533,19 +551,24 @@ class GetCompanyInfoRikunabi(GetCompanyInfoMixin):
         """
         output_company_list = []
         try:
-            url = temp_url = ""
+            # トップページを表示
+            driver = self.init_selenium_ff_get_page(url_=self.SEARCH_PAGE_URL)
+            # キーワードでサイト内検索
+            driver = self._search_keyword(driver=driver)
+            url = ""
             while True:
-                # URL
-                url = self.SEARCH_PAGE_URL if not url else temp_url
-                print(f"accsess url: {url}")
-                # 会社一覧ページをパース
-                driver = self.init_selenium_ff_get_page(url_=url)
-                driver, company_list = self._create_company_name_list(driver=driver)
+                if url:
+                    # URL
+                    print(f"accsess url: {url}")
+                    # 会社一覧ページをパース
+                    driver = self.init_selenium_ff_get_page(url_=url)
+                driver, company_list = self._create_company_name_list(
+                                    driver=driver, output_list=output_company_list)
                 # 会社名のリスト
                 output_company_list.extend(company_list.copy())
                 #次のページURLを取得
-                temp_url = self.get_next_page_url(driver=driver)
-                print(f"next page url: {temp_url}")
+                url = self.get_next_page_url(driver=driver)
+                print(f"next page url: {url}")
                 # 毎回ブラウザを閉じる
                 driver.close()
         except Exception as e:
@@ -562,13 +585,13 @@ if __name__ == "__main__":
     import sys
     medium_type = sys.argv[1]
 
-    # with open("temp.txt", "r", encoding="SHIFT_JIS") as f:
-    #     company_list = []
-    #     company_list.extend(f.read().splitlines())
-    purge_domein_list = ['wantedly.com']
-
     company_list = []
     get_company_info = None
+
+    with open("rikunabi_next_temp.txt", mode="r", encoding="SHIFT_JIS") as f:
+        company_list.extend(f.read().splitlines())
+    purge_domein_list = ['wantedly.com']
+
     if medium_type == 'type':
         get_company_info = GetCompanyInfoType(keyword="IT", interval=2, purge_domein_list=purge_domein_list)
         company_list = get_company_info.execute(output_flg=True)
