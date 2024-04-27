@@ -136,6 +136,7 @@ class GetCompanyInfoMixin:
                     **{"source": source}
                 )
             )
+        print(f"finished: {len(company_name_list)}")
         # データ保存
         self.save(data_list=company_info)
 
@@ -165,6 +166,7 @@ class GetCompanyInfoMixin:
                     **{"capital": company_name[1], "employees": company_name[2], "page": company_name[3], "source": source}
                 )
             )
+        print(f"finished: {len(company_name_list)}")
         # データ保存
         self.save(data_list=company_info)
 
