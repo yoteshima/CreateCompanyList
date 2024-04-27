@@ -120,13 +120,15 @@ class GetCompanyInfoMixin:
 
     def create_company_info(
         self,
-        conmpany_name_list: List[str],
+        company_name_list: List[str],
         source: str,
         output_filename: str = "./temp_dict_.csv",
         output_flg: bool = False
     ) -> List[str]:
+        print(f"start process: add company url. Lists length total: {len(company_name_list)}")
         company_info = []
-        for company_name in conmpany_name_list:
+        for i, company_name in enumerate(company_name_list, start=1):
+            print(f"in processing... {i}/{len(company_name_list)}", end="\r")
             company_url = self.get_company_url(conmapny_name=company_name).copy()
             company_info.append(
                 dict(
@@ -141,19 +143,21 @@ class GetCompanyInfoMixin:
             # 外部ファイルへの書き出し
             self.output_data_csv(filename_=output_filename,
                     data=company_info)
-
+        print("finish process: added company url.")
         return company_info
 
 
     def create_company_infos(
         self,
-        conmpany_name_list: List[List[str]],
+        company_name_list: List[List[str]],
         source: str,
         output_filename: str = "./temp_dict_.csv",
         output_flg: bool = False
     ) -> List[Dict[str, Union[str, int]]]:
+        print(f"start process: add company url. Lists length total: {len(company_name_list)}")
         company_info = []
-        for company_name in conmpany_name_list:
+        for i, company_name in enumerate(company_name_list, start=1):
+            print(f"in processing... {i}/{len(company_name_list)}", end="\r")
             company_url = self.get_company_url(conmapny_name=company_name[0]).copy()
             company_info.append(
                 dict(
@@ -168,6 +172,7 @@ class GetCompanyInfoMixin:
             # 外部ファイルへの書き出し
             self.output_datas_csv(filename_=output_filename,
                     data=company_info)
+        print("finish process: added company url.")
         return company_info
 
 
@@ -188,16 +193,18 @@ class GetCompanyInfoMixin:
         for i, elemh3 in  enumerate(driver.find_elements(By.XPATH, "//a/h3")):
             # 検索エンジンにてヒットしたサイト一覧
             matched_article = re.match(r"^.*会社(概要|案内|情報).*$", elemh3.text)
-            _url = ""
-            if matched_article or i == 0:
-                # タイトルマッチする記事、もしくは検索した先頭に上がってきた記事
-                elema = elemh3.find_element(By.XPATH, "..")
-                # 企業URL
-                _url = elema.get_attribute("href")
+            # タイトルマッチする記事、もしくは検索した先頭に上がってきた記事
+            elema = elemh3.find_element(By.XPATH, "..")
+            # 企業URL
+            _url = elema.get_attribute("href")
+            if matched_article:
                 if self._is_not_purge_url(company_url=_url):
                     # 企業サイトのURL
                     company_url = _url
                     break
+            if i == 0:
+                # 先頭に出てきたサイトのURLを保持
+                company_url = _url
             else:
                 continue
         # ブラウザを閉じる
@@ -273,7 +280,7 @@ class GetCompanyInfoMixin:
         mdb_manager.close()
 
 
-    def get_page(self) -> Union[int, None]:
+    def get_page(self, source: str) -> Union[int, None]:
         # DBへデータを保存
         mdb_manager = MariaDbManager()
         # mariaDBのcursorを生成

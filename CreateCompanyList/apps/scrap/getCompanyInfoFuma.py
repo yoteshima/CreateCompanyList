@@ -123,7 +123,7 @@ class GetCompanyInfoFuma(GetCompanyInfoMixin):
             if target_page:
                 page = target_page
             else:
-                page = self.get_page()
+                page = self.get_page(source="Fuma")
             page_url = ""
             if page:
                 # ページ用のURLを生成

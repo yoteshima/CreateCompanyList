@@ -16,6 +16,6 @@ WHERE NOT EXISTS (
 		companys_info
 	WHERE
 		company = '{company}'
-		AND url = '{url}'
+		OR url = '{url}'
 )
 ;

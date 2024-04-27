@@ -2,8 +2,10 @@ SELECT
 	page
 FROM
 	companys_info
+WHERE
+	source = '{source}'
 ORDER BY
-	add_date DESC
+	page DESC
 LIMIT
 	1
 ;
