@@ -117,7 +117,7 @@ class GetCompanyInfoFuma(GetCompanyInfoMixin):
         output_company_list = []
         cnt = 0
         while cnt < self.GET_PAGE_NUM:
-            print(f"started main process: ({cnt+1}/{self.GET_PAGE_NUM})")
+            print(f"started main process: ({cnt+1}/{self.GET_PAGE_NUM}), from page: {target_page}")
             # 前回まで登録したページを取得
             page = 0
             if target_page:
@@ -163,7 +163,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Fumaから会社の情報を取得する')
     parser.add_argument("--keyword", type=str, help="媒体サイト内での検索キーワード", default="情報サービス業")
     parser.add_argument("--interval", type=int, help="処理の間隔時間(秒)", default=2)
-    parser.add_argument("--page", type=int, help="取得を開始するページ数", default=None)
+    parser.add_argument("--page", type=int, help="取得を開始するページ数", default=0)
     parser.add_argument("--output", type=bool, help="中間ファイル出力可否フラグ", default=True)
     parser.add_argument("--file_text", type=str, help="出力ファイル名(text).", default="./temp_fuma.txt")
     parser.add_argument("--file_csv", type=str, help="出力ファイル名(csv/tsv).", default="./temp_dict_fuma.csv")
@@ -181,4 +181,4 @@ if __name__ == "__main__":
 
     get_company_info = GetCompanyInfoFuma(keyword=keyword, interval=interval, purge_domein_list=purge_domein_list)
     company_list = get_company_info.execute(target_page=page, output_filename=output_filename_text, output_flg=output_flg)
-    get_company_info.create_company_infos(conmpany_name_list=company_list, source="Fuma", output_filename=output_filename_csv, output_flg=output_flg)
+    get_company_info.create_company_infos(company_name_list=company_list, source="Fuma", output_filename=output_filename_csv, output_flg=output_flg)

@@ -288,7 +288,7 @@ class GetCompanyInfoMixin:
         # mariaDBのcursorを生成
         mdb_manager.generate_cursor()
         # データ取得
-        page = self.get_previous_page(mdb=mdb_manager)
+        page = self.get_previous_page(mdb=mdb_manager, source=source)
         # BDの接続を解除
         mdb_manager.close()
         if page:
@@ -303,8 +303,9 @@ class GetCompanyInfoMixin:
         return sql
 
 
-    def get_previous_page(self, mdb: MariaDbManager) -> List[Union[Tuple[str], None]]:
-        sql = self._get_sql(filename="get_latest_page.sql")
+    def get_previous_page(self, mdb: MariaDbManager, source: str) -> List[Union[Tuple[str], None]]:
+        base_sql = self._get_sql(filename="get_latest_page.sql")
+        sql = base_sql.format(source=source)
         print(sql)
         return mdb.execute(sql=sql)
 
