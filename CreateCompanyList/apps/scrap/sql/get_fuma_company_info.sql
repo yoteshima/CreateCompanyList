@@ -10,6 +10,6 @@ FROM
 WHERE
 	source = 'Fuma'
 ORDER BY
-	company
-	, add_date
+	add_date
+	, company
 ;

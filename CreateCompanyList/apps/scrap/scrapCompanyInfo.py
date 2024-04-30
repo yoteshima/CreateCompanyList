@@ -387,3 +387,26 @@ class GetCompanyInfoMixin:
         print(sql)
         # SQL実行
         return mdb.execute(sql=sql)
+
+
+if __name__ == "__main__":
+    import argparse
+    # 引数の設定
+    parser = argparse.ArgumentParser(description='会社の情報を取得する')
+    parser.add_argument("--url", type=str, help="媒体のURL", default="")
+    parser.add_argument("--interval", type=int, help="処理の間隔時間(秒)", default=2)
+    parser.add_argument("--source", type=str, help="取得元媒体の種類", default=None)
+    parser.add_argument("--file_csv", type=str, help="出力ファイル名(csv).", default="./all.csv")
+    args = parser.parse_args()
+    # 引数の取得
+    url = args.url
+    interval = args.interval
+    source = args.source
+    output_filename_csv = args.file_csv
+
+    company_list = []
+    purge_domein_list = ['wantedly.com']
+
+    get_company_info = GetCompanyInfoMixin(base_url=url, interval=interval, purge_domein_list=purge_domein_list)
+    # DBに取り込んだデータを外部ファイルへ書き込み
+    get_company_info.output_csv_from_db(filename=output_filename_csv, source=source)
