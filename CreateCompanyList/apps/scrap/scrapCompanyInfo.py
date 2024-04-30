@@ -296,6 +296,29 @@ class GetCompanyInfoMixin:
         return None
 
 
+    def output_csv_from_db(
+        self,
+        filename: str = "./all.csv",
+        source: str = None
+    ) -> None:
+        # DBからCSVを生成
+        mdb_manager = MariaDbManager()
+        # mariaDBのcursorを生成
+        mdb_manager.generate_cursor()
+        # ファイル名
+        sql_filename = "get_fuma_company_info.sql" if source == "Fuma" else "get_all_company_info.sql"
+        # データ取得
+        datas = self.get_data(filename=sql_filename, mdb=mdb_manager)
+        # BDの接続を解除
+        mdb_manager.close()
+
+        with open(file=filename, mode="w", newline='', encoding="utf-8") as file:
+            writer = csv.writer(file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            # データを書き込む
+            for row in datas:
+                writer.writerow(row)
+
+
     def _get_sql(self, filename: str) -> str:
         filepath = os.path.join(self.SQL_DIR, filename)
         with open(file=filepath, mode="r") as fsql:
@@ -353,3 +376,14 @@ class GetCompanyInfoMixin:
             print(sql)
             # insert実行
             mdb.execute(sql=sql)
+
+
+    def get_data(
+        self,
+        filename: str,
+        mdb: MariaDbManager
+    ) -> List[Union[Tuple[str], None]]:
+        sql = self._get_sql(filename=filename)
+        print(sql)
+        # SQL実行
+        return mdb.execute(sql=sql)
