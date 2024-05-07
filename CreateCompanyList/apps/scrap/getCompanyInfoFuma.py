@@ -115,14 +115,13 @@ class GetCompanyInfoFuma(GetCompanyInfoMixin):
         会社名リスト作成を実行
         """
         output_company_list = []
-        cnt = 0
+        cnt = page = 0
         while cnt < self.GET_PAGE_NUM:
             print(f"started main process: ({cnt+1}/{self.GET_PAGE_NUM}), from page: {target_page}")
             # 前回まで登録したページを取得
-            page = 0
             if target_page:
                 page = target_page
-            else:
+            elif not target_page and not page:
                 page = self.get_page(source="Fuma")
             page_url = ""
             if page:
@@ -138,7 +137,7 @@ class GetCompanyInfoFuma(GetCompanyInfoMixin):
                 
                 if cnt <= self.GET_PAGE_NUM:
                     # 次のページ
-                    target_page += 1
+                    page += 1
                     # ランダムにインターバルを挟む
                     interval = self.generate_interval()
                     print(f"wait: {interval} sec")
