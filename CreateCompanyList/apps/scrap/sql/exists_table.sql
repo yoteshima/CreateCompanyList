@@ -1,1 +1,1 @@
-SHOW TABLES LIKE 'companys_info';
+SHOW TABLES LIKE '{table_name}';

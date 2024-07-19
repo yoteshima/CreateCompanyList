@@ -129,7 +129,7 @@ class GetCompanyInfoMixin:
         company_info = []
         for i, company_name in enumerate(company_name_list, start=1):
             print(f"in processing... {i}/{len(company_name_list)}", end="\r")
-            company_url = self.get_company_url(conmapny_name=company_name).copy()
+            company_url = self.get_company_url(company_name=company_name).copy()
             company_info.append(
                 dict(
                     **company_url,
@@ -159,7 +159,7 @@ class GetCompanyInfoMixin:
         company_info = []
         for i, company_name in enumerate(company_name_list, start=1):
             print(f"in processing... {i}/{len(company_name_list)}", end="\r")
-            company_url = self.get_company_url(conmapny_name=company_name[0]).copy()
+            company_url = self.get_company_url(company_name=company_name[0]).copy()
             company_info.append(
                 dict(
                     **company_url,
@@ -178,7 +178,7 @@ class GetCompanyInfoMixin:
         return company_info
 
 
-    def get_company_url(self, conmapny_name: str) -> Dict[str, str]:
+    def get_company_url(self, company_name: str) -> Dict[str, str]:
         """
         会社名でググってURLを取得
         """
@@ -186,10 +186,11 @@ class GetCompanyInfoMixin:
         time.sleep(self.INTERVAL_TIME)
         # 会社HP検索用URL作成
         url_ = "{base_url}{name}%E3%80%80会社概要".format(
-                        base_url=self.SERCH_ENGIN_URL, name=conmapny_name)
+                        base_url=self.SERCH_ENGIN_URL, name=company_name)
         # 検索結果一覧を取得
         # driver = self.init_selenium_get_page(url_=url_)
         driver = self.init_selenium_ff_get_page(url_=url_)
+        # 会社URL用
         company_url = ""
         # URLのリスト取得
         for i, elemh3 in  enumerate(driver.find_elements(By.XPATH, "//a/h3")):
@@ -199,6 +200,7 @@ class GetCompanyInfoMixin:
             elema = elemh3.find_element(By.XPATH, "..")
             # 企業URL
             _url = elema.get_attribute("href")
+
             if matched_article:
                 if self._is_not_purge_url(company_url=_url):
                     # 企業サイトのURL
@@ -211,7 +213,7 @@ class GetCompanyInfoMixin:
                 continue
         # ブラウザを閉じる
         driver.close()
-        return {"name": conmapny_name, "url": company_url}
+        return {"name": company_name, "url": company_url}
 
         
     def output_data(self, filename_: str, data_list: List[str]) -> None:
@@ -333,14 +335,16 @@ class GetCompanyInfoMixin:
         return mdb.execute(sql=sql)
 
 
-    def exists_table(self, mdb: MariaDbManager) -> List[Union[Tuple[str], None]]:
-        sql = self._get_sql(filename="exists_table.sql")
+    def exists_table(self, mdb: MariaDbManager, tablename: str = "companys_info") -> List[Union[Tuple[str], None]]:
+        base_sql = self._get_sql(filename="exists_table.sql")
+        sql = base_sql.format(table_name=tablename)
         print(sql)
         return mdb.execute(sql=sql)
 
 
-    def create_table(self, mdb: MariaDbManager) -> None:
-        sql = self._get_sql(filename="create_table_companys_info.sql")
+    def create_table(self, mdb: MariaDbManager, tablename: str = "companys_info") -> None:
+        filename = "create_table_companys_info.sql" if tablename == "companys_info" else "create_table_ng_companys.sql"
+        sql = self._get_sql(filename=filename)
         print(sql)
         mdb.execute(sql=sql)
 

@@ -11,7 +11,7 @@ SELECT
 	{insert_data}
 WHERE NOT EXISTS (
 	SELECT
-		'duplication'
+		'exists'
 	FROM
 		companys_info
 	WHERE
