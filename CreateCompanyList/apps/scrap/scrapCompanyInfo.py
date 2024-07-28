@@ -19,6 +19,7 @@ import sys
 sys.path.append('./')
 
 from common.db.mariaDbManager import MariaDbManager
+from common.decorater.wait_sec import wait_seconds
 
 
 class GetCompanyInfoMixin:
@@ -56,7 +57,7 @@ class GetCompanyInfoMixin:
         # 取り除く会社ドメインリスト
         self.PURGE_DOMEIN_LIST = purge_domein_list
 
-
+    @wait_seconds(seconds=3)
     def init_selenium_get_page(self, url_: str) -> ChromeWebDriver:
         # ブラウザ非動作オプション
         options = webdriver.ChromeOptions()
@@ -80,12 +81,13 @@ class GetCompanyInfoMixin:
         driver.get(url_)
         return driver
 
-
+    @wait_seconds(seconds=1)
     def init_selenium_ff_get_page(self, url_: str) -> FirefoxWebDriver:
         options = webdriver.FirefoxOptions()
         options.add_argument('--headless')
         driver = webdriver.Firefox(options=options)
         driver.set_window_size(1920, 2160)
+        driver.implicitly_wait(30)
         # 検索
         driver.get(url_)
         return driver
@@ -308,9 +310,16 @@ class GetCompanyInfoMixin:
         # mariaDBのcursorを生成
         mdb_manager.generate_cursor()
         # ファイル名
-        sql_filename = "get_fuma_company_info.sql" if source == "Fuma" else "get_all_company_info.sql"
+        # sql_filename = "get_fuma_company_info.sql" if source == "Fuma" else "get_all_company_info.sql"
+        if source == "Fuma":
+            sql_filename = "get_fuma_company_info.sql"
+        elif source:
+            sql_filename = "get_target_source_company_info.sql"
+        else:
+            sql_filename = "get_all_company_info.sql"
+
         # データ取得
-        datas = self.get_data(filename=sql_filename, mdb=mdb_manager)
+        datas = self.get_data(filename=sql_filename, mdb=mdb_manager, source=source)
         # BDの接続を解除
         mdb_manager.close()
 
@@ -385,9 +394,14 @@ class GetCompanyInfoMixin:
     def get_data(
         self,
         filename: str,
-        mdb: MariaDbManager
+        mdb: MariaDbManager,
+        *args,
+        **kwargs
     ) -> List[Union[Tuple[str], None]]:
         sql = self._get_sql(filename=filename)
+        source = kwargs.get("source", None)
+        if source:
+            sql = sql.format(source=source)
         print(sql)
         # SQL実行
         return mdb.execute(sql=sql)
