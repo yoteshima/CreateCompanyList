@@ -132,7 +132,11 @@ class GetCompanyInfoRikunabi(GetCompanyInfoMixin):
         """
         会社名リスト作成を実行
         """
-        print("started process")
+        # Slack通知
+        self.slack_client.post_message(
+            source="リクナビNEXT",
+            message="処理を開始します。"
+        )
         output_company_list = []
         try:
             # トップページを表示
@@ -156,12 +160,23 @@ class GetCompanyInfoRikunabi(GetCompanyInfoMixin):
                 # 毎回ブラウザを閉じる
                 driver.close()
         except Exception as e:
-            print(e)
+            import traceback
+            # Slack通知
+            self.slack_client.post_message(
+                source="リクナビNEXT",
+                message=traceback.format_exc(),
+                status="warn"
+            )
 
         if output_flg:
             # 外部ファイルへの書き出し
             self.output_data(filename_=output_filename,
                     data_list=output_company_list)
+        # Slack通知
+        self.slack_client.post_message(
+            source="リクナビNEXT",
+            message=f"媒体から会社名の取得が完了しました。 {len(output_company_list)} 件"
+        )
         return output_company_list
 
 

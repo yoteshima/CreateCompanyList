@@ -20,6 +20,7 @@ sys.path.append('./')
 
 from common.db.mariaDbManager import MariaDbManager
 from common.decorater.wait_sec import wait_seconds
+from common.utils.messages import SlackClientManager
 
 
 class GetCompanyInfoMixin:
@@ -56,6 +57,8 @@ class GetCompanyInfoMixin:
         self.INTERVAL_TIME = interval
         # 取り除く会社ドメインリスト
         self.PURGE_DOMEIN_LIST = purge_domein_list
+        # Slack通知用クライアント
+        self.slack_client = SlackClientManager()
 
     @wait_seconds(seconds=3)
     def init_selenium_get_page(self, url_: str) -> ChromeWebDriver:
@@ -127,7 +130,11 @@ class GetCompanyInfoMixin:
         output_filename: str = "./temp_dict_.csv",
         output_flg: bool = False
     ) -> List[str]:
-        print(f"start process: add company url. Lists length total: {len(company_name_list)}")
+        # Slack通知
+        self.slack_client.post_message(
+            source=source,
+            message="媒体から取得した社名リストからそれぞれのURLを取得する処理を開始しました。"
+        )
         company_info = []
         for i, company_name in enumerate(company_name_list, start=1):
             print(f"in processing... {i}/{len(company_name_list)}", end="\r")
@@ -146,7 +153,11 @@ class GetCompanyInfoMixin:
             # 外部ファイルへの書き出し
             self.output_data_csv(filename_=output_filename,
                     data=company_info)
-        print("finish process: added company url.")
+        # Slack通知
+        self.slack_client.post_message(
+            source=source,
+            message="媒体から取得した社名リストの作成処理が完了しました。"
+        )
         return company_info
 
 
@@ -157,7 +168,11 @@ class GetCompanyInfoMixin:
         output_filename: str = "./temp_dict_.csv",
         output_flg: bool = False
     ) -> List[Dict[str, Union[str, int]]]:
-        print(f"start process: add company url. Lists length total: {len(company_name_list)}")
+        # Slack通知
+        self.slack_client.post_message(
+            source=source,
+            message="媒体から取得した社名リストからそれぞれのURLを取得する処理を開始しました。"
+        )
         company_info = []
         for i, company_name in enumerate(company_name_list, start=1):
             print(f"in processing... {i}/{len(company_name_list)}", end="\r")
@@ -176,7 +191,11 @@ class GetCompanyInfoMixin:
             # 外部ファイルへの書き出し
             self.output_datas_csv(filename_=output_filename,
                     data=company_info)
-        print("finish process: added company url.")
+        # Slack通知
+        self.slack_client.post_message(
+            source=source,
+            message="媒体から取得した社名リストの作成処理が完了しました。"
+        )
         return company_info
 
 

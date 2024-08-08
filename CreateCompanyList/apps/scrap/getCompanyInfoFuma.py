@@ -114,6 +114,11 @@ class GetCompanyInfoFuma(GetCompanyInfoMixin):
         """
         会社名リスト作成を実行
         """
+        # Slack通知
+        self.slack_client.post_message(
+            source="Fuma",
+            message="処理を開始します。"
+        )
         output_company_list = []
         cnt = page = 0
         while cnt < self.GET_PAGE_NUM:
@@ -146,13 +151,24 @@ class GetCompanyInfoFuma(GetCompanyInfoMixin):
                 # ブラウザを閉じる
                 driver.close()
             except Exception as e:
-                print(f"error: {e}")
+                import traceback
+                # Slack通知
+                self.slack_client.post_message(
+                    source="Fuma",
+                    message=traceback.format_exc(),
+                    status="warn"
+                )
                 break
 
         if output_flg:
             # 外部ファイルへの書き出し
             self.output_datas(filename_=output_filename,
                     data_list=output_company_list)
+        # Slack通知
+        self.slack_client.post_message(
+            source="Fuma",
+            message=f"媒体から会社名の取得が完了しました。 {len(output_company_list)} 件"
+        )
         return output_company_list
 
 

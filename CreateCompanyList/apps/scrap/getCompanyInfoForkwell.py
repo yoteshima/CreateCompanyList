@@ -83,29 +83,46 @@ class GetCompanyInfoForkwell(GetCompanyInfoMixin):
         """
         会社名リスト作成を実行
         """
-        print("started process")
+        # Slack通知
+        self.slack_client.post_message(
+            source="ForkwellJobs",
+            message="処理を開始します。"
+        )
         output_company_list = []
-        # 検索ページトップ画面の一覧から会社名を取得
-        c_name_list = self._create_company_name_list(
-                    url_=self.SEARCH_PAGE_URL, output_list=output_company_list)
-        output_company_list.extend(c_name_list)
-        # 次のページURL取得
-        next_url = self._get_next_page_url(url_=self.SEARCH_PAGE_URL)
-        while next_url:
-            output_company_list.extend(
-                    self._create_company_name_list(
-                            url_=next_url, output_list=output_company_list).copy())
+        try:
+            # 検索ページトップ画面の一覧から会社名を取得
+            c_name_list = self._create_company_name_list(
+                        url_=self.SEARCH_PAGE_URL, output_list=output_company_list)
+            output_company_list.extend(c_name_list)
             # 次のページURL取得
-            next_url = self._get_next_page_url(url_=next_url)
-            if not next_url:
-                # 次のページがない場合、ループ終了
-                break
+            next_url = self._get_next_page_url(url_=self.SEARCH_PAGE_URL)
+            while next_url:
+                output_company_list.extend(
+                        self._create_company_name_list(
+                                url_=next_url, output_list=output_company_list).copy())
+                # 次のページURL取得
+                next_url = self._get_next_page_url(url_=next_url)
+                if not next_url:
+                    # 次のページがない場合、ループ終了
+                    break
+        except Exception as e:
+            import traceback
+            # Slack通知
+            self.slack_client.post_message(
+                source="ForkwellJobs",
+                message=traceback.format_exc(),
+                status="warn"
+            )
 
         if output_flg:
             # 外部ファイルへの書き出し
             self.output_data(filename_=output_filename,
                     data_list=output_company_list)
-        print("company list was created.")
+        # Slack通知
+        self.slack_client.post_message(
+            source="ForkwellJobs",
+            message=f"媒体から会社名の取得が完了しました。 {len(output_company_list)} 件"
+        )
         return output_company_list
 
 

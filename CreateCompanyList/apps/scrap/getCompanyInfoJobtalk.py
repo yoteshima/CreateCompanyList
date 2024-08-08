@@ -239,36 +239,53 @@ class GetCompanyInfoJobtalk(GetCompanyInfoMixin):
         """
         会社名リスト作成を実行
         """
-        print("started process")
+        # Slack通知
+        self.slack_client.post_message(
+            source="転職会議",
+            message="処理を開始します。"
+        )
         output_company_list = []
-        for search_page_url in self.SEARCH_PAGE_URLS:
-            # 検索ページトップ画面の一覧から会社名を取得
-            c_name_list, next_url = self._create_company_name_list(
-                        url_=search_page_url, output_list=output_company_list)
-            output_company_list.extend(c_name_list)
-            # 次のページURL取得
-            # next_url = self._get_next_page_url(url_=search_page_url)
-            while next_url:
-                interval = generate_interval()
-                print(f"wait: {interval} sec")
-                time.sleep(generate_interval())
+        try:
+            for search_page_url in self.SEARCH_PAGE_URLS:
+                # 検索ページトップ画面の一覧から会社名を取得
                 c_name_list, next_url = self._create_company_name_list(
-                    url_=next_url,
-                    output_list=output_company_list
-                )
-                output_company_list.extend(c_name_list.copy())
-                print(f"out put companys name: {output_company_list}")
+                            url_=search_page_url, output_list=output_company_list)
+                output_company_list.extend(c_name_list)
                 # 次のページURL取得
-                # next_url = self._get_next_page_url(url_=next_url)
-                if not next_url:
-                    # 次のページがない場合、ループ終了
-                    break
+                # next_url = self._get_next_page_url(url_=search_page_url)
+                while next_url:
+                    interval = generate_interval()
+                    print(f"wait: {interval} sec")
+                    time.sleep(generate_interval())
+                    c_name_list, next_url = self._create_company_name_list(
+                        url_=next_url,
+                        output_list=output_company_list
+                    )
+                    output_company_list.extend(c_name_list.copy())
+                    print(f"out put companys name: {output_company_list}")
+                    # 次のページURL取得
+                    # next_url = self._get_next_page_url(url_=next_url)
+                    if not next_url:
+                        # 次のページがない場合、ループ終了
+                        break
+        except Exception as e:
+            import traceback
+            # Slack通知
+            self.slack_client.post_message(
+                source="転職会議",
+                message=traceback.format_exc(),
+                status="warn"
+            )
 
         if output_flg:
             # 外部ファイルへの書き出し
             self.output_data(filename_=output_filename,
                     data_list=output_company_list)
-        print("company list was created.")
+        # Slack通知
+        self.slack_client.post_message(
+            source="転職会議",
+            message=f"媒体から会社名の取得が完了しました。 {len(output_company_list)} 件"
+        )
         return output_company_list
 
 
@@ -300,19 +317,16 @@ if __name__ == "__main__":
 
     if not industory_list:
         industory_list = [
-            "総合電機",
-            "家電・AV",
-            "コンピュータ・通信・精密機器",
-            "半導体・電子・電気機器",
-            "医療・医薬",
-            "自動車・運輸・輸送機器",
-            "金属・鉄鋼",
-            "環境",
-            "化学・素材",
-            "アパレル・日用品",
-            "食品・化粧品",
-            "住宅・建材・インテリア・エクステリア",
-            "その他（メーカー/製造系）",
+            # "外食・フード",
+            # "理容・美容",
+            # "エステ・ネイル・マッサージ",
+            # "レジャー・アミューズメント・フィットネス",
+            "旅行・ホテル",
+            "教育",
+            "医療・福祉・介護業界",
+            "冠婚葬祭業界",
+            "人材",
+            "その他（サービス/外食/レジャー系）",
         ]
     if not prefecture_list:
         prefecture_list = [

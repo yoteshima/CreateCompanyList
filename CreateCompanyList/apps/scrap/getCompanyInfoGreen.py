@@ -86,7 +86,11 @@ class GetCompanyInfoGreen(GetCompanyInfoMixin):
         """
         会社名リスト作成を実行
         """
-        print("started process")
+        # Slack通知
+        self.slack_client.post_message(
+            source="Green",
+            message="処理を開始します。"
+        )
         output_company_list = []
         # 検索ページトップ画面の一覧から会社名を取得
         c_name_list = self._create_company_name_list(
@@ -114,6 +118,11 @@ class GetCompanyInfoGreen(GetCompanyInfoMixin):
             # 外部ファイルへの書き出し
             self.output_data(filename_=output_filename,
                     data_list=output_company_list)
+        # Slack通知
+        self.slack_client.post_message(
+            source="Green",
+            message=f"媒体から会社名の取得が完了しました。 {len(output_company_list)} 件"
+        )
         return output_company_list
 
 
