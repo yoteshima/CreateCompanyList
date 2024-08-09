@@ -138,13 +138,23 @@ class GetCompanyInfoMixin:
         company_info = []
         for i, company_name in enumerate(company_name_list, start=1):
             print(f"in processing... {i}/{len(company_name_list)}", end="\r")
-            company_url = self.get_company_url(company_name=company_name).copy()
-            company_info.append(
-                dict(
-                    **company_url,
-                    **{"source": source}
+            try:
+                company_url = self.get_company_url(company_name=company_name).copy()
+                company_info.append(
+                    dict(
+                        **company_url,
+                        **{"source": source}
+                    )
                 )
-            )
+            except Exception as e:
+                import traceback
+                # Slack通知
+                self.slack_client.post_message(
+                    source=source,
+                    message=traceback.format_exc(),
+                    status="warn"
+                )
+                continue
         print(f"finished: {len(company_name_list)}")
         # データ保存
         self.save(data_list=company_info)
@@ -176,13 +186,23 @@ class GetCompanyInfoMixin:
         company_info = []
         for i, company_name in enumerate(company_name_list, start=1):
             print(f"in processing... {i}/{len(company_name_list)}", end="\r")
-            company_url = self.get_company_url(company_name=company_name[0]).copy()
-            company_info.append(
-                dict(
-                    **company_url,
-                    **{"capital": company_name[1], "employees": company_name[2], "page": company_name[3], "source": source}
+            try:
+                company_url = self.get_company_url(company_name=company_name[0]).copy()
+                company_info.append(
+                    dict(
+                        **company_url,
+                        **{"capital": company_name[1], "employees": company_name[2], "page": company_name[3], "source": source}
+                    )
                 )
-            )
+            except Exception as e:
+                import traceback
+                # Slack通知
+                self.slack_client.post_message(
+                    source=source,
+                    message=traceback.format_exc(),
+                    status="warn"
+                )
+                continue
         print(f"finished: {len(company_name_list)}")
         # データ保存
         self.save(data_list=company_info)
