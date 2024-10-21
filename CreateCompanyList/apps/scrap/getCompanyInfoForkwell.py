@@ -148,4 +148,4 @@ if __name__ == "__main__":
 
     get_company_info = GetCompanyInfoForkwell(keyword=keyword, interval=interval, purge_domein_list=purge_domein_list)
     company_list = get_company_info.execute(output_filename=output_filename_text, output_flg=output_flg)
-    get_company_info.create_company_info(conmpany_name_list=company_list, source="ForkwellJobs", output_filename=output_filename_csv, output_flg=output_flg)
+    get_company_info.create_company_info(company_name_list=company_list, source="ForkwellJobs", output_filename=output_filename_csv, output_flg=output_flg)
