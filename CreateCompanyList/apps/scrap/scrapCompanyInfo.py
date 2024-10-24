@@ -470,5 +470,16 @@ if __name__ == "__main__":
     purge_domein_list = ['wantedly.com']
 
     get_company_info = GetCompanyInfoMixin(base_url=url, interval=interval, purge_domein_list=purge_domein_list)
+    output_filepath: str = os.path.join(
+        get_company_info.OUTPUT_DIR,
+        output_filename_csv
+    )
+
     # DBに取り込んだデータを外部ファイルへ書き込み
-    get_company_info.output_csv_from_db(filename=output_filename_csv, source=source)
+    get_company_info.output_csv_from_db(filename=output_filepath, source=source)
+    # Slackへ出力したデータ送信
+    get_company_info.slack_file_client.upload_files(
+        csv_file_path=output_filepath,
+        filename=output_filename_csv,
+        title=f"{source}から取得した情報" if source else "全データの情報"
+    )
