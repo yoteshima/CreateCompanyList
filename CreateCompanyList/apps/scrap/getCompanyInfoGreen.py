@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
+import os
 from typing import List
+from datetime import datetime
 
 from selenium.webdriver.common.by import By
 
@@ -80,7 +82,9 @@ class GetCompanyInfoGreen(GetCompanyInfoMixin):
 
     def execute(
         self,
+        source: str = "Green",
         output_filename: str = "./temp.txt",
+        output_filename_csv: str = "./temp.csv",
         output_flg: bool = False
     ) -> List[str]:
         """
@@ -88,7 +92,7 @@ class GetCompanyInfoGreen(GetCompanyInfoMixin):
         """
         # Slack通知
         self.slack_client.post_message(
-            source="Green",
+            source=source,
             message="処理を開始します。"
         )
         output_company_list = []
@@ -120,8 +124,33 @@ class GetCompanyInfoGreen(GetCompanyInfoMixin):
                     data_list=output_company_list)
         # Slack通知
         self.slack_client.post_message(
-            source="Green",
+            source=source,
             message=f"媒体から会社名の取得が完了しました。 {len(output_company_list)} 件"
+        )
+        # 取得した会社名リストにHPのURLを付与したデータをDBへ登録
+        _ = self.create_company_info(
+            company_name_list=output_company_list,
+            source=source,
+            output_filename=output_filename_csv,
+            output_flg=output_flg
+        )
+        # 出力用ファイル名を設定
+        output_filename_list: List[str] = output_filename_csv.split(".")
+        today: str = datetime.now().strftime('%Y%m%d')
+        output_filepath: str = os.path.join(
+            self.OUTPUT_DIR,
+            f"{output_filename_list[0]}_{today}.{output_filename_list[-1]}"
+        )
+        # DBからCSVを出力
+        self.output_csv_from_db(
+            filename=output_filepath,
+            source=source
+        )
+        # Slackへ出力したデータ送信
+        self.slack_file_client.upload_files(
+            csv_file_path=output_filepath,
+            filename=output_filename_csv,
+            title=f"{source}から取得した情報"
         )
         return output_company_list
 
@@ -133,8 +162,8 @@ if __name__ == "__main__":
     parser.add_argument("--keyword", type=str, help="媒体サイト内での検索キーワード", default="IT")
     parser.add_argument("--interval", type=int, help="処理の間隔時間(秒)", default=2)
     parser.add_argument("--output", type=bool, help="中間ファイル出力可否フラグ", default=True)
-    parser.add_argument("--file_text", type=str, help="出力ファイル名(text).", default="./temp_green.txt")
-    parser.add_argument("--file_csv", type=str, help="出力ファイル名(csv/tsv).", default="./temp_dict_green.csv")
+    parser.add_argument("--file_text", type=str, help="出力ファイル名(text).", default="temp_green.txt")
+    parser.add_argument("--file_csv", type=str, help="出力ファイル名(csv/tsv).", default="temp_dict_green.csv")
     args = parser.parse_args()
     # 引数の取得
     keyword = args.keyword
@@ -149,5 +178,9 @@ if __name__ == "__main__":
     purge_domein_list = ['wantedly.com']
 
     get_company_info = GetCompanyInfoGreen(keyword=keyword, interval=interval, purge_domein_list=purge_domein_list)
-    company_list = get_company_info.execute(output_filename=output_filename_text, output_flg=output_flg)
-    get_company_info.create_company_info(company_name_list=company_list, source="Green", output_filename=output_filename_csv, output_flg=output_flg)
+    company_list = get_company_info.execute(
+        source="Green",
+        output_filename=output_filename_text,
+        output_filename_csv=output_filename_csv,
+        output_flg=output_flg
+    )

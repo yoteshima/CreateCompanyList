@@ -2,7 +2,9 @@
 
 import re
 import time
+import os
 
+from datetime import datetime
 from enum import Enum
 from typing import List, Tuple, Union
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
@@ -233,7 +235,9 @@ class GetCompanyInfoJobtalk(GetCompanyInfoMixin):
 
     def execute(
         self,
+        source: str = "転職会議",
         output_filename: str = "./temp.txt",
+        output_filename_csv: str = "./temp.csv",
         output_flg: bool = False
     ) -> List[str]:
         """
@@ -241,7 +245,7 @@ class GetCompanyInfoJobtalk(GetCompanyInfoMixin):
         """
         # Slack通知
         self.slack_client.post_message(
-            source="転職会議",
+            source=source,
             message="処理を開始します。"
         )
         output_company_list = []
@@ -251,8 +255,6 @@ class GetCompanyInfoJobtalk(GetCompanyInfoMixin):
                 c_name_list, next_url = self._create_company_name_list(
                             url_=search_page_url, output_list=output_company_list)
                 output_company_list.extend(c_name_list)
-                # 次のページURL取得
-                # next_url = self._get_next_page_url(url_=search_page_url)
                 while next_url:
                     interval = generate_interval()
                     print(f"wait: {interval} sec")
@@ -263,8 +265,6 @@ class GetCompanyInfoJobtalk(GetCompanyInfoMixin):
                     )
                     output_company_list.extend(c_name_list.copy())
                     print(f"out put companys name: {output_company_list}")
-                    # 次のページURL取得
-                    # next_url = self._get_next_page_url(url_=next_url)
                     if not next_url:
                         # 次のページがない場合、ループ終了
                         break
@@ -272,7 +272,7 @@ class GetCompanyInfoJobtalk(GetCompanyInfoMixin):
             import traceback
             # Slack通知
             self.slack_client.post_message(
-                source="転職会議",
+                source=source,
                 message=traceback.format_exc(),
                 status="warn"
             )
@@ -283,8 +283,33 @@ class GetCompanyInfoJobtalk(GetCompanyInfoMixin):
                     data_list=output_company_list)
         # Slack通知
         self.slack_client.post_message(
-            source="転職会議",
+            source=source,
             message=f"媒体から会社名の取得が完了しました。 {len(output_company_list)} 件"
+        )
+        # 取得した会社名リストにHPのURLを付与したデータをDBへ登録
+        _ = self.create_company_info(
+            company_name_list=output_company_list,
+            source=source,
+            output_filename=output_filename_csv,
+            output_flg=output_flg
+        )
+        # 出力用ファイル名を設定
+        output_filename_list: List[str] = output_filename_csv.split(".")
+        today: str = datetime.now().strftime('%Y%m%d')
+        output_filepath: str = os.path.join(
+            self.OUTPUT_DIR,
+            f"{output_filename_list[0]}_{today}.{output_filename_list[-1]}"
+        )
+        # DBからCSVを出力
+        self.output_csv_from_db(
+            filename=output_filepath,
+            source=source
+        )
+        # Slackへ出力したデータ送信
+        self.slack_file_client.upload_files(
+            csv_file_path=output_filepath,
+            filename=output_filename_csv,
+            title=f"{source}から取得した情報"
         )
         return output_company_list
 
@@ -301,8 +326,8 @@ if __name__ == "__main__":
     parser.add_argument("--prefecture-list", type=str_to_list, help="媒体サイト内での都道府県名リスト", default=[])
     parser.add_argument("--interval", type=int, help="処理の間隔時間(秒)", default=2)
     parser.add_argument("--output", type=bool, help="中間ファイル出力可否フラグ", default=True)
-    parser.add_argument("--file_text", type=str, help="出力ファイル名(text).", default="./temp_jobtalk.txt")
-    parser.add_argument("--file_csv", type=str, help="出力ファイル名(csv/tsv).", default="./temp_dict_jobtalk.csv")
+    parser.add_argument("--file_text", type=str, help="出力ファイル名(text).", default="temp_jobtalk.txt")
+    parser.add_argument("--file_csv", type=str, help="出力ファイル名(csv/tsv).", default="temp_dict_jobtalk.csv")
     args = parser.parse_args()
     # 引数の取得
     industory_list = args.industory_list
@@ -337,5 +362,9 @@ if __name__ == "__main__":
         ]
 
     get_company_info = GetCompanyInfoJobtalk(industory_list=industory_list, prefecture_list=prefecture_list, interval=interval, purge_domein_list=purge_domein_list)
-    company_list = get_company_info.execute(output_filename=output_filename_text, output_flg=output_flg)
-    get_company_info.create_company_info(company_name_list=company_list, source="転職会議", output_filename=output_filename_csv, output_flg=output_flg)
+    company_list = get_company_info.execute(
+        source="転職会議",
+        output_filename=output_filename_text,
+        output_filename_csv=output_filename_csv,
+        output_flg=output_flg
+    )

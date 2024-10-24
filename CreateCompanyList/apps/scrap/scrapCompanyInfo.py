@@ -40,6 +40,8 @@ class GetCompanyInfoMixin:
     DRIVER_PATH = os.path.join(BASE_DIR, "driver")
     # SQL格納ディレクトリ
     SQL_DIR = os.path.join(BASE_DIR, "sql")
+    # 出力ファイル格納ディレクトリ
+    OUTPUT_DIR = os.path.join(BASE_DIR, "output")
     # 接続するDB名
     # DB_NAME = "main.db"
 
@@ -59,6 +61,8 @@ class GetCompanyInfoMixin:
         self.PURGE_DOMEIN_LIST = purge_domein_list
         # Slack通知用クライアント
         self.slack_client = SlackClientManager()
+        # Slack通知用(添付)クライアント
+        self.slack_file_client = SlackClientManager(webhooks=False)
 
     @wait_seconds(seconds=3)
     def init_selenium_get_page(self, url_: str) -> ChromeWebDriver:
@@ -362,6 +366,7 @@ class GetCompanyInfoMixin:
         # BDの接続を解除
         mdb_manager.close()
 
+        print(f"filename: {filename}")
         with open(file=filename, mode="w", newline='', encoding="utf-8") as file:
             writer = csv.writer(file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
             # データを書き込む

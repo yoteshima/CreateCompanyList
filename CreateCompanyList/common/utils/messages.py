@@ -1,9 +1,11 @@
 import os
 from enum import Enum
-from typing import TypeVar, Sequence
+from typing import TypeVar, Sequence, Union
 
 from dotenv import load_dotenv
+from slack_sdk.errors import SlackApiError
 from slack_sdk.web import WebClient
+from slack_sdk.web.client import SlackResponse
 from slack_sdk.webhook import WebhookClient
 from slack_sdk.models.attachments import Attachment
 
@@ -125,9 +127,32 @@ class SlackClientManager:
         self.client.send(attachments=message_attachments)
 
 
+    def upload_files(
+        self,
+        csv_file_path: str,
+        filename: str,
+        title: str
+    ) -> Union[SlackResponse, None]:
+        channel_id: str = os.environ.get("SLACK_FILE_UPLOAD_CHANNEL_ID", None)
+        try:
+            # ファイルをアップロード
+            return self.client.files_upload_v2(
+                channel=channel_id,
+                file=csv_file_path,
+                filename=filename,
+                title=title
+            )
+        except SlackApiError as e:
+            print(f"Slack API Error: {e.response['error']}")
+
 
 if __name__ == "__main__":
-    slack_manager = SlackClientManager()
-    slack_manager.post_message(source="Fuma", message="処理を開始します。", status="success")
-    slack_manager.post_message(source="Fuma", message="処理に失敗しました。", status="error")
-    slack_manager.post_message(source="Fuma", message="ちょっと心配です。", status="warn")
+    slack_manager = SlackClientManager(webhooks=False)
+    slack_manager.upload_files(
+        csv_file_path="C:\\Users\\xrnsj\\work\\CreateCompanyList\\CreateCompanyList\\all.csv",
+        filename="all.csv",
+        title="全データ分"
+    )
+    # slack_manager.post_message(source="Fuma", message="処理を開始します。", status="success")
+    # slack_manager.post_message(source="Fuma", message="処理に失敗しました。", status="error")
+    # slack_manager.post_message(source="Fuma", message="ちょっと心配です。", status="warn")
